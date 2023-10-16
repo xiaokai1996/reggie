@@ -116,3 +116,9 @@ public class getCode {
 
 ```
 
+https://redis.io/docs/getting-started/installation/install-redis-on-mac-os/
+# redis自启动
+brew services start redis
+# 安装界面程序 
+https://docs.getmedis.com/
+brew install medis
