@@ -45,10 +45,6 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     @Resource
     private UserService userService;
 
-    /**
-     * 添加订单
-     * @param orders
-     */
     @Override
     @Transactional
     public void addOrders(Orders orders) {
@@ -74,10 +70,11 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             throw new CustomException("用户地址信息有误，不能下单");
         }
 
-        long orderId = IdWorker.getId();//订单号
+        long orderId = IdWorker.getId(); //订单号
 
         AtomicInteger amount = new AtomicInteger(0);
 
+        // 向订单明细表插入数据，多条数据, 购物车里面每个种类对应这里的一个detail
         List<OrderDetail> orderDetails = shoppingCarts.stream().map((item) -> {
             OrderDetail orderDetail = new OrderDetail();
             orderDetail.setOrderId(orderId);
@@ -91,7 +88,9 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             amount.addAndGet(item.getAmount().multiply(new BigDecimal(item.getNumber())).intValue());
             return orderDetail;
         }).collect(Collectors.toList());
+        orderDetailService.saveBatch(orderDetails);
 
+        // 向订单表插入数据，只有一条数据
         orders.setId(orderId);
         orders.setOrderTime(new Date());
         orders.setCheckoutTime(new Date());
@@ -106,11 +105,9 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
                 + (addressBook.getCityName() == null ? "" : addressBook.getCityName())
                 + (addressBook.getDistrictName() == null ? "" : addressBook.getDistrictName())
                 + (addressBook.getDetail() == null ? "" : addressBook.getDetail()));
-        //向订单表插入数据，一条数据
         this.save(orders);
 
-        //向订单明细表插入数据，多条数据
-        orderDetailService.saveBatch(orderDetails);
+
 
         //清空购物车数据
         shoppingCartService.remove(wrapper);
@@ -130,6 +127,8 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Orders::getUserId,userId);
         page(orders, wrapper);
+
+        // 把order信息和地址信息放到ordersDto里面
         List<OrdersDto> records = orders.getRecords().stream().map(item->{
             OrdersDto ordersDto = new OrdersDto();
             BeanUtils.copyProperties(item, ordersDto);

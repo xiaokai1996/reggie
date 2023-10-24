@@ -19,16 +19,22 @@ import java.util.List;
 public class WebConfig extends WebMvcConfigurationSupport {
     @Override
     protected void addResourceHandlers(ResourceHandlerRegistry registry) {
-        log.info("资源映射开始。。");
+        log.info("前端资源映射开始");
         registry.addResourceHandler("/backend/**").addResourceLocations("classpath:/backend/");
         registry.addResourceHandler("/front/**").addResourceLocations("classpath:/front/");
+        // 尝试开启swagger-ui.html
+        registry.addResourceHandler(new String[]{"/swagger-ui.html**"}).addResourceLocations(new String[]{"classpath:/META-INF/resources/"});
+        registry.addResourceHandler(new String[]{"/webjars/**"}).addResourceLocations(new String[]{"classpath:/META-INF/resources/webjars/"});
     }
 
     @Override
     protected void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         // 添加一个转换器，除自带八大转换器外，将Long装成String
+        log.info("字符串/时间转换映射转换器");
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
         converter.setObjectMapper(new JacksonObjectMapper());
         converters.add(0,converter);
     }
 }
+//registry.addResourceHandler(new String[]{"/swagger-ui.html**"}).addResourceLocations(new String[]{"classpath:/META-INF/resources/"});
+//        registry.addResourceHandler(new String[]{"/webjars/**"}).addResourceLocations(new String[]{"classpath:/META-INF/resources/webjars/"});

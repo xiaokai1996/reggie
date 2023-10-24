@@ -1,11 +1,7 @@
 package com.anyi.reggie.entity;
 
-import java.math.BigDecimal;
 import com.baomidou.mybatisplus.annotation.IdType;
-import java.util.Date;
 import com.baomidou.mybatisplus.annotation.TableId;
-import java.io.Serializable;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -13,14 +9,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
-/**
- * <p>
- * 订单表
- * </p>
- *
- * @author anyi
- * @since 2022-05-25
- */
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Date;
+
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)

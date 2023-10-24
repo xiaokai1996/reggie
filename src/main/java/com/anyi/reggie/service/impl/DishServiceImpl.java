@@ -9,160 +9,116 @@ import com.anyi.reggie.service.CategoryService;
 import com.anyi.reggie.service.DishFlavorService;
 import com.anyi.reggie.service.DishService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-/**
- * <p>
- * 菜品管理 服务实现类
- * </p>
- *
- * @author anyi
- * @since 2022-05-24
- */
+@Slf4j
 @Service
 public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements DishService {
-
     @Resource
     private DishFlavorService dishFlavorService;
-
     @Resource
     private CategoryService categoryService;
-
-
     @Resource
     private RedisTemplate redisTemplate;
-    /**
-     * 添加菜品
-     * @param dishDto
-     */
+
     @Override
     @Transactional
     public void addDish(DishDto dishDto) {
-        // 首先封装菜品信息并保存
+        log.info("dishDto: {}", dishDto);
+        // 1. 首先封装菜品信息并保存
         Dish dish = new Dish();
         BeanUtils.copyProperties(dishDto, dish);
-        save(dish);
-
+        this.save(dish);    // 当dish被保存到数据库里面的时候
         List<DishFlavor> flavors = dishDto.getFlavors();
-        // 封装flavors信息并且批量保存
-        flavors =flavors.stream().map((item)->{
-            item.setDishId(dish.getId());
-            return item;
-        }).collect(Collectors.toList());
+        // 2. 封装flavors信息并且批量保存
+        flavors.forEach((flavor) -> flavor.setDishId(dish.getId())); // 这里用forEach比重新赋值要更高效一点,因为传递进去的是指针/引用
         dishFlavorService.saveBatch(flavors);
     }
 
     @Override
     @Transactional
-    public Page<DishDto> pageSearch(int page, int pageSize, String name) {
-        // 创建分页
-        Page<Dish> pageInfo = new Page<>(page, pageSize);
-        // 返回页面的分页
+    // DishDto在Dish基础上
+    public Page<DishDto> pageSearch(Integer page, Integer pageSize, String name) {
+        // 1. 把基础的dish page查出来
+        Page<Dish> dishPage = new Page<>(page, pageSize);
+        LambdaQueryWrapper<Dish> dishLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        dishLambdaQueryWrapper.like(name != null, Dish::getName, name);
+        dishLambdaQueryWrapper.orderByDesc(Dish::getCreateTime);
+        this.page(dishPage, dishLambdaQueryWrapper);
+
+        // 2. 把dish page转换成dishDto的page
         Page<DishDto> dishDtoPage = new Page<>();
-
-        QueryWrapper<Dish> employeeQueryWrapper = new QueryWrapper<>();
-
-        employeeQueryWrapper.orderByDesc("create_time");
-        if(name !=null){
-            employeeQueryWrapper.like("name", name);
-        }
-        // 查出信息
-        page(pageInfo, employeeQueryWrapper);
-        // 拷贝信息
-        BeanUtils.copyProperties(pageInfo, dishDtoPage);
-
-        // 根据id查询出菜品名
-        List<Dish> records = pageInfo.getRecords();
-        List<DishDto> recordsDto = records.stream().map((item)->{
+        BeanUtils.copyProperties(dishPage, dishDtoPage, "records");
+        dishDtoPage.setRecords(dishPage.getRecords().stream().map((dish -> {
             DishDto dishDto = new DishDto();
-            BeanUtils.copyProperties(item, dishDto);
-            String categoryName = categoryService.getById(item.getCategoryId()).getName();
-            dishDto.setCategoryName(categoryName);
+            BeanUtils.copyProperties(dish, dishDto);
+            dishDto.setCategoryName(categoryService.getById(dish.getCategoryId()).getName());
             return dishDto;
-        }).collect(Collectors.toList());
-        // 重新放入到 返回集合中
-        dishDtoPage.setRecords(recordsDto);
+        })).collect(Collectors.toList()));
         return dishDtoPage;
     }
 
-    /**
-     * 根据id回显数据
-     * @param id
-     * @return
-     */
     @Override
     public DishDto getDishById(Long id) {
-        // 根据id查询菜品信息
-        DishDto dishDto = new DishDto();
-        Dish dish = getById(id);
-        // 根据id查询口味信息
-        List<DishFlavor> dishFlavors = dishFlavorService.list(new QueryWrapper<DishFlavor>().eq("dish_id", id));
+        // 1. 查询dish基础信息和口味信息
+        Dish dish = this.getDishById(id);
+        List<DishFlavor> dishFlavors = dishFlavorService.list(new LambdaQueryWrapper<DishFlavor>().eq(DishFlavor::getDishId, id));
 
+        // 2. 封装到dishDto里面
+        DishDto dishDto = new DishDto();
         BeanUtils.copyProperties(dish, dishDto);
         dishDto.setFlavors(dishFlavors);
-        // 返回数据
+
         return dishDto;
     }
 
-    /**
-     * 更新菜品
-     * @param dishDto
-     */
     @Override
     public void updateDish(DishDto dishDto) {
-        // 首先封装菜品信息并保存
+        // 1.  封装菜品信息并保存
         Dish dish = new Dish();
         BeanUtils.copyProperties(dishDto, dish);
-        updateById(dish);
+        this.updateById(dish);
 
-        List<DishFlavor> flavors = dishDto.getFlavors();
-        // 封装flavors信息并且批量保存
-        flavors =flavors.stream().map((item)->{
-            item.setDishId(dish.getId());
-            return item;
-        }).collect(Collectors.toList());
-        dishFlavorService.updateBatchById(flavors);
+        // 2. 封装flavors信息并且批量保存
+        List<DishFlavor> dishFlavors = dishDto.getFlavors();
+        dishFlavors.forEach((dishFlavor) -> dishFlavor.setDishId(dish.getId()));
+        dishFlavorService.updateBatchById(dishFlavors);
     }
 
-    /**
-     * 根据id删除菜品
-     * @param ids
-     */
     @Override
-    public void deleteDish(String  ids) {
-        String[] list = ids.split(",");
-        for (String id : list) {
-            // 删除菜品
-            removeById(Long.parseLong(id));
-            // 删除菜品对应口味信息
-            dishFlavorService.remove(new QueryWrapper<DishFlavor>().eq("dish_id", id));
-        }
+    public void deleteDish(List<Long> ids) {
+        // 1. 删除dish本身
+        this.removeByIds(ids);
+        // 2. 删除和dish相关的flavor
+        dishFlavorService.remove(new LambdaQueryWrapper<DishFlavor>().in(DishFlavor::getDishId, ids));
     }
 
     @Override
     public List<DishDto> getList(Long categoryId, Integer status) {
 
+        // 先尝试从redis里面取数据,如果取到了,直接返回
         String key = CommentRedis.DISH_PREFIX + categoryId + "_" + status;
-
         List<DishDto> dtoList = (List<DishDto>) redisTemplate.opsForValue().get(key);
         if (dtoList !=null){
             return dtoList;
         }
+
+        // 否则从数据库里面查
         LambdaQueryWrapper<Dish> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Dish::getCategoryId, categoryId).eq(Dish::getStatus,status);
         List<Dish> list = list(wrapper);
+        // 如果是需要生成新的对象,尽量选择stream的方式
         List<DishDto> dishDtoList = list.stream().map((item)->{
             DishDto dishDto = new DishDto();
             BeanUtils.copyProperties(item, dishDto);
@@ -172,7 +128,17 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
             dishDto.setFlavors(favors);
             return dishDto;
         }).collect(Collectors.toList());
+
+        // 在取完数据之后,会保存到redis里面
         redisTemplate.opsForValue().set(key, dishDtoList,30, TimeUnit.MINUTES);
         return dishDtoList;
+    }
+
+    @Override
+    public void updateStatus(Integer status, List<Long> ids) {
+        log.info("批量修改菜品的状态");
+        List<Dish> dishes = this.list(new LambdaQueryWrapper<Dish>().in(Dish::getId, ids));
+        dishes.forEach(dish -> dish.setStatus(status));
+        this.updateBatchById(dishes);
     }
 }

@@ -122,3 +122,10 @@ brew services start redis
 # 安装界面程序 
 https://docs.getmedis.com/
 brew install medis
+
+
+这个repo是别人的,但是功能比较完备,所以我决定在这个基础上学习添加注释,并尝试完善
+http://localhost:8080/backend/page/login/login.html
+http://localhost:8080/backend/index.html
+
+http://localhost:8080/front/index.html

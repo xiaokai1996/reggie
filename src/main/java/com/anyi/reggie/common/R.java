@@ -15,13 +15,15 @@ public class R<T> {
 
     private Map map = new HashMap(); //动态数据
 
-    public static <T> R<T> success(T object) {
-        R<T> r = new R<T>();
+    // 如果成功的话,传回来的是数据
+    public static <T> R<T> sucess(T object) {
+        R<T> r = new R<>();
         r.data = object;
         r.code = 1;
         return r;
     }
 
+    // 如果出错的话,传回来的是msg消息
     public static <T> R<T> error(String msg) {
         R r = new R();
         r.msg = msg;
