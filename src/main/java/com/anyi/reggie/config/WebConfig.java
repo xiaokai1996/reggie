@@ -22,9 +22,9 @@ public class WebConfig extends WebMvcConfigurationSupport {
         log.info("前端资源映射开始");
         registry.addResourceHandler("/backend/**").addResourceLocations("classpath:/backend/");
         registry.addResourceHandler("/front/**").addResourceLocations("classpath:/front/");
-        // 尝试开启swagger-ui.html
-        registry.addResourceHandler(new String[]{"/swagger-ui.html**"}).addResourceLocations(new String[]{"classpath:/META-INF/resources/"});
-        registry.addResourceHandler(new String[]{"/webjars/**"}).addResourceLocations(new String[]{"classpath:/META-INF/resources/webjars/"});
+        // 尝试开启swagger-ui.html,但是好像总是出错,可能适用于非spring-boot的项目
+//        registry.addResourceHandler(new String[]{"/swagger-ui.html**"}).addResourceLocations(new String[]{"classpath:/META-INF/resources/"});
+//        registry.addResourceHandler(new String[]{"/webjars/**"}).addResourceLocations(new String[]{"classpath:/META-INF/resources/webjars/"});
     }
 
     @Override
