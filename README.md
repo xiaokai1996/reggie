@@ -129,3 +129,13 @@ http://localhost:8080/backend/page/login/login.html
 http://localhost:8080/backend/index.html
 
 http://localhost:8080/front/index.html
+
+# about this repo/project
+I learned something about SpringBoot from IT-Heima in BiliBili and find an excellent project called Reggie take out.
+The tutorial video is very long although detailed, and it does not provide any documents or slide sheets, even a full
+GitHub repo. So I searched on GitHub, and luckily I found this repo, this repo is not perfect either such as lack of
+logout feature and poor instructions. The swagger ui does not work either, and it is hard to fix this which makes me 
+very frustrated.
+
+Good news is that I found another project which is upgrade from Reggie take out:
+https://www.bilibili.com/video/BV1TP411v7v6/?p=1&vd_source=2cdc3de199e29dc4f7a75c883bb0d11d
